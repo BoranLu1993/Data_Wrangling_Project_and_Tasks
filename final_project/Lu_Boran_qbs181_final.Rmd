@@ -1,0 +1,64 @@
+---
+title: "Final"
+author: "Boran Lu"
+date: "11.15.2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+3
+```{r}
+#call useful packages
+library(RODBC)
+library(dplyr)
+#make connection by ODBC from qbs181 database
+connect <- odbcConnect("dartmouth","blu","blu@qbs181")
+#using sql command to down Demographics, ChronicConditions, and Text and assign them to names: "demo","cc", and "tx" from qbs 181 database
+demo <- sqlQuery(connect,"select * from Demographics")
+cc <- sqlQuery(connect,"select * from ChronicConditions")
+tx <- sqlQuery(connect,"select * from Text")
+#save as .csv file in working directory
+write.csv(demo,file = "demo.csv")
+write.csv(cc,file = "cc.csv")
+write.csv(tx,file = "tx.csv")
+#see the structure of each dataset
+str(demo)
+str(cc)
+str(tx)
+#merge ChronicConditions and Text and assign to "a"
+a <- merge(cc,tx,by.x = "tri_patientid",by.y = "tri_contactId")
+x <- merge(a,demo,by.x = "tri_patientid",by.y = "contactid")
+#change variable "TextSentDate" as Date for next command
+a$TextSentDate <- as.Date(a$TextSentDate)
+uniday <- a %>% group_by(tri_patientid) %>% summarise(TextSentDate=format(max(TextSentDate), '%y/%m/%d'))
+#merge cc and nuiday and assign to "b"
+b <- merge(cc,uniday,by="tri_patientid")
+#merge b and Text and assign to "c"
+c <- merge(b,tx,by.x = "tri_patientid",by.y = "tri_contactId")
+#delete teh fifth column
+c[5] <- NULL
+#remove deplicated and assign to "d"
+d <- c[!duplicated(c),]
+#change the third column name to "TextSentLatestDate"
+colnames(d)[3] <- "TextSentLatestDate"
+#merge Demographics and d and assign to "finaldata"
+finaldata <- merge(demo,d,by.x = "contactid",by.y = "tri_patientid")
+#remove duplicated for id and assign to "final"
+final <- finaldata[!duplicated(finaldata$contactid),]
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
